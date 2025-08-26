@@ -7,19 +7,19 @@ def weaviate_search(query: str, type: str, collection: str, limit: int) -> any:
         pages = client.collections.get(collection)
         response = pages.query.bm25(
             query=query,
-            limit=2,
+            limit=limit,
         )
     elif type == "vector":
         pages = client.collections.get(collection)
         response = pages.query.near_text(
             query=query,
-            limit=2,
+            limit=limit,
         )
     elif type == "hybrid":
         pages = client.collections.get(collection)
         response = pages.query.hybrid(
             query=query,
-            limit=2,
+            limit=limit,
         )
     else:
         print("search type is not supported")

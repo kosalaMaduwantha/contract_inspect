@@ -6,12 +6,13 @@ from index_lib import (
     partition_pdf, 
     store_data_in_weaviate
 )
+from config import WEAVIATE_SCHEMA
 
 if __name__ == "__main__":
     client = weaviate.connect_to_local()
     
     # create schema : delete the schema before creating it 
-    create_schema(client)
+    create_schema(client, WEAVIATE_SCHEMA)
     data_folder = "../data"
     path = Path("/home/kosala/git-repos/contract_inspect/data/Oracle_contract.pdf")
 
@@ -31,6 +32,7 @@ if __name__ == "__main__":
     # store the extracted content in Weaviate
     store_data_in_weaviate(
         client,
-        content_extractor.get_processed_content()
+        content_extractor.get_processed_content(),
+        WEAVIATE_SCHEMA["class"]
     )   
     client.close()

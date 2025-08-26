@@ -54,7 +54,7 @@ class ContentExtractor:
 
             if self.page_end:
                 page_no += 1 # track the page number
-                data_struct = {
+                data_struct = { # NOTE: this has to be changed according to the collection schema
                     "page_number": page_no,  
                     "document": self.document_path.name,  
                     "content": self.content()
@@ -85,17 +85,17 @@ def partition_pdf_file(file_path: str) -> any:
     elements = partition_pdf(filename=file_path)
     return elements
     
-def create_schema(client) -> None:
+def create_schema(client, schema: dict) -> None:
     """Create a Weaviate schema for the Document class.
     """
     client.collections.delete_all()
-    client.collections.create_from_dict(WEAVIATE_SCHEMA)
+    client.collections.create_from_dict(schema)
     return None
 
-def store_data_in_weaviate(client, data_objects: list[dict]) -> None:
+def store_data_in_weaviate(client, data_objects: list[dict], collection: str) -> None:
     """Store the processed data objects in Weaviate.
     """
-    pages = client.collections.get("Page")
+    pages = client.collections.get(collection)
     with pages.batch.fixed_size(batch_size=100) as batch:
         for data_object in data_objects:
             batch.add_object(data_object)
