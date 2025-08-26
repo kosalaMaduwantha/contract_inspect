@@ -1,3 +1,5 @@
+import sys
+sys.path.append("/home/kosala/git-repos/contract_inspect/")
 import weaviate
 from pathlib import Path
 from index_lib import (
@@ -6,7 +8,7 @@ from index_lib import (
     partition_pdf, 
     store_data_in_weaviate
 )
-from config import WEAVIATE_SCHEMA
+from src.retriver.config import WEAVIATE_SCHEMA
 
 if __name__ == "__main__":
     client = weaviate.connect_to_local()

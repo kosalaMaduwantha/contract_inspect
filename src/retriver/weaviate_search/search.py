@@ -1,27 +1,42 @@
 import weaviate
+from weaviate.classes.query import MetadataQuery
 
 def weaviate_search(query: str, type: str, collection: str, limit: int) -> any:
-
-    client = weaviate.connect_to_local()
-    if type == "bm25":
-        pages = client.collections.get(collection)
-        response = pages.query.bm25(
-            query=query,
-            limit=limit,
-        )
-    elif type == "vector":
-        pages = client.collections.get(collection)
-        response = pages.query.near_text(
-            query=query,
-            limit=limit,
-        )
-    elif type == "hybrid":
-        pages = client.collections.get(collection)
-        response = pages.query.hybrid(
-            query=query,
-            limit=limit,
-        )
-    else:
-        print("search type is not supported")
-    client.close()
+    response = None
+    try:
+        client = weaviate.connect_to_local()
+        if type == "bm25":
+            pages = client.collections.get(collection)
+            response = pages.query.bm25(
+                query=query,
+                limit=limit,
+            )
+        elif type == "vector": # TODO: fix bug in vector search
+            pages = client.collections.get(collection)
+            response = pages.query.near_text(
+                query=query,
+                limit=limit,
+                return_metadata=MetadataQuery(distance=True)
+            )
+        elif type == "hybrid":
+            pages = client.collections.get(collection)
+            response = pages.query.hybrid(
+                query=query,
+                limit=limit,
+            )
+        else:
+            print("search type is not supported")
+        client.close()
+    except Exception as e:
+        print("Error occurred while searching:", e)
+        client.close()
     return response
+
+if __name__ == "__main__":
+    query = "oracle"
+    type = "vector"  # or "vector" or "hybrid"
+    collection = "Page"
+    limit = 5
+
+    results = weaviate_search(query, type, collection, limit)
+    print("Search Results:", results)

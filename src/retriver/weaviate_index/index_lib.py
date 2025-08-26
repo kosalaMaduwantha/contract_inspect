@@ -1,8 +1,10 @@
+import sys
+sys.path.append("/home/kosala/git-repos/contract_inspect/")  # add parent directory to the path for imports
 import logging
 from pathlib import Path
 from weaviate.embedded import EmbeddedOptions
 from unstructured.partition.pdf import partition_pdf
-from retriver.config import WEAVIATE_SCHEMA
+from src.retriver.config import WEAVIATE_SCHEMA
 
 # logger config
 logger = logging.getLogger(__name__)
