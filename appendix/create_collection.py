@@ -1,7 +1,7 @@
 import weaviate
 from weaviate.classes.config import Configure
 
-client = weaviate.connect_to_local()
+client = weaviate.Client()
 
 client.collections.delete("Question")  # Delete the collection if it exists
 questions = client.collections.create(
