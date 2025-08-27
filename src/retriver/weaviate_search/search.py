@@ -34,7 +34,7 @@ def weaviate_search(query: str, type: str, collection: str, limit: int) -> any:
 
 if __name__ == "__main__":
     query = "oracle"
-    type = "vector"  # or "vector" or "hybrid"
+    type = "hybrid"  # or "vector" or "hybrid"
     collection = "Page"
     limit = 5
 

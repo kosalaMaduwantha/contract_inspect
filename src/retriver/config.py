@@ -1,11 +1,17 @@
-
 WEAVIATE_SCHEMA = {
     "class": "Page",
+    "vectorizer": "text2vec-ollama",  # Required: specify the vectorizer
     "properties": [
         {
             "name": "document",
             "dataType": ["text"],
             "description": "Original file name or URL",
+            "moduleConfig": {
+                "text2vec-ollama": {
+                    "skip": True,  # Don't vectorize filenames
+                    "vectorizePropertyName": False
+                }
+            }
         },
         {
             "name": "page_number",
@@ -15,7 +21,13 @@ WEAVIATE_SCHEMA = {
         {
             "name": "content",
             "dataType": ["text"],
-            "description": "Main content of the file"
+            "description": "Main content of the file",
+            "moduleConfig": {
+                "text2vec-ollama": {
+                    "skip": False,  # Explicitly vectorize content
+                    "vectorizePropertyName": False
+                }
+            }
         }
     ],
     "moduleConfig": {
