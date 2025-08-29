@@ -1,3 +1,4 @@
+import os
 WEAVIATE_SCHEMA = {
     "class": "Page",
     "vectorizer": "text2vec-ollama",  # Required: specify the vectorizer
@@ -28,6 +29,11 @@ WEAVIATE_SCHEMA = {
                     "vectorizePropertyName": False
                 }
             }
+        },
+        {
+            "name": "effective_date",
+            "dataType": ["date"],
+            "description": "Date when the document was created"
         }
     ],
     "moduleConfig": {
@@ -43,3 +49,6 @@ WEAVIATE_SCHEMA = {
         }
     }
 }
+
+METADATA_CONFIG_PATH = os.environ.get("METADATA_CONFIG_PATH", "/home/kosala/git-repos/contract_inspect/metadata.yml")
+DATA_FOLDER = os.environ.get("DATA_FOLDER", "/home/kosala/git-repos/contract_inspect/data/")

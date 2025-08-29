@@ -1,0 +1,25 @@
+service_agreements:
+  - id: SA-001
+    name: Oracle Cloud Agreement
+    file_name: Oracle_Cloud_Agreement.pdf
+    provider: Oracle
+    customer: ACME Corp
+    effective_date: 2025-01-01
+    expiration_date: 2026-01-01
+    status: active
+    description: >
+      Agreement for Oracle Cloud services covering compute, storage, and support.
+    tags:
+      - cloud
+      - oracle
+      - enterprise
+    document_path: data/Oracle_contract.pdf
+    contact:
+      name: John Doe
+      email: john.doe@acme.com
+      phone: "+1-555-1234"
+    notes: Initial agreement, subject to annual review.
+
+  # Add more service agreements below
+  # - id: SA-002
+  #   name: ...

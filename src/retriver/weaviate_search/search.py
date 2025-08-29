@@ -32,6 +32,10 @@ def weaviate_search(query: str, type: str, collection: str, limit: int) -> any:
         client.close()
     return response
 
+def add_metadata_filters():
+    # create set of metadata filters using a configuration
+    pass
+
 if __name__ == "__main__":
     query = "oracle"
     type = "hybrid"  # or "vector" or "hybrid"

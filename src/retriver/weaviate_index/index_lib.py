@@ -11,8 +11,9 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 class ContentExtractor:
-    def __init__(self, document_path: Path):
+    def __init__(self, document_path: Path, metadata: dict):
         self.document_path = document_path
+        self.metadata = metadata
         self.page_end = False  # Keep track of whether we've reached the end of a page
         self.texts = ""  # Keep track of the extracted content text
         self.text_list = []
@@ -59,7 +60,8 @@ class ContentExtractor:
                 data_struct = { # NOTE: this has to be changed according to the collection schema
                     "page_number": page_no,  
                     "document": self.document_path.name,  
-                    "content": self.content()
+                    "content": self.content(),
+                    "effective_date": self.metadata.get("effective_date")
                 }
                 self.text_list.append(data_struct)
                 self.reset_content() # reset the self.texts variable to store content for the next page
