@@ -20,6 +20,11 @@ service_agreements:
       phone: "+1-555-1234"
     notes: Initial agreement, subject to annual review.
 
+metadata_filter_config:
+  effective_date:
+    start: 2025-01-01
+    end: 2026-01-01
+
   # Add more service agreements below
   # - id: SA-002
   #   name: ...

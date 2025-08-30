@@ -1,6 +1,7 @@
 import sys
 sys.path.append("/home/kosala/git-repos/contract_inspect/")  # add parent directory to the path for imports
 import logging
+from datetime import datetime
 from pathlib import Path
 from weaviate.embedded import EmbeddedOptions
 from unstructured.partition.pdf import partition_pdf
@@ -57,11 +58,12 @@ class ContentExtractor:
 
             if self.page_end:
                 page_no += 1 # track the page number
+                # dt = datetime.strptime(str(self.metadata.get("effective_date")), "%Y-%m-%d")
                 data_struct = { # NOTE: this has to be changed according to the collection schema
                     "page_number": page_no,  
                     "document": self.document_path.name,  
                     "content": self.content(),
-                    "effective_date": self.metadata.get("effective_date")
+                    "effective_date": self.metadata.get("effective_date").strftime("%Y-%m-%dT%H:%M:%SZ")
                 }
                 self.text_list.append(data_struct)
                 self.reset_content() # reset the self.texts variable to store content for the next page
