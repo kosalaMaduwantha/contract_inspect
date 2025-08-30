@@ -2,7 +2,7 @@ import sys
 sys.path.append("/home/kosala/git-repos/contract_inspect/")
 import weaviate
 from pathlib import Path
-from index_lib import (
+from retriver.index.util.index_lib import (
     ContentExtractor, 
     create_schema, 
     partition_pdf, 
