@@ -1,19 +1,31 @@
 
 # Implementation Overview
 
+
+## Project Structure Overview
+
 The `src` directory contains the main modules for contract inspection and retrieval:
 
-- **llm/**: Components related to large language models (LLMs), such as model loading, inference, or integration.
-- **retriver/**: Implements retrieval logic and Weaviate-based indexing/search.
+- **llm/**  
+	Components for large language models (LLMs), such as model loading and inference.
+
+- **retriver/**  
+	Implements retrieval logic and Weaviate-based indexing/search.
 	- `config.py`: Configuration settings for retrieval operations.
 	- `retriever.py`: Core retrieval logic for searching and fetching data.
-	- **weaviate_index/**: Utilities for indexing data in Weaviate.
-		- `index_invoker.py`: Invokes indexing operations in Weaviate.
-		- `index_lib.py`: Library functions for data indexing.
-	- **weaviate_search/**: Utilities for searching indexed data in Weaviate.
-		- `search.py`: Search logic using Weaviate's API.
+	- **index/**: Indexing utilities.
+		- `index_invoker.py`: Invokes document indexing in Weaviate.
+		- `util/index_lib.py`: Library functions for PDF partitioning and schema management.
+		- `util/content_extractor.py`: Extracts content from partitioned documents.
+	- **search/**: Search utilities.
+		- `util/search_lib.py`: BM25, vector, and hybrid search logic using Weaviate.
 
-These modules work together to enable document indexing, semantic search, and retrieval using LLMs and Weaviate.
+- **query_parser/**  
+	Implements query parsing for the RAG system.
+	- `utils/parser_lib.py`: Utility functions for query parsing (placeholder for now).
+	- `tests/`: Unit tests for query parser components.
+
+These modules work together to enable document indexing, semantic search, query parsing, and retrieval using LLMs and Weaviate.
 
 ## Search Functionality (`search.py`)
 
@@ -76,5 +88,7 @@ print("Search Results:", results)
 
 ## TODO
 
-Metadata filtering is implemented for all search types. You can customize filter logic in `add_metadata_filters` in `search.py`.
+Create Query parser module to the RAG system to parse the prompt and extract relevant information for retrieval and for the answer generation.
+
+Implement ReRanking for the Retriever module.
 
