@@ -15,9 +15,11 @@ The `src` directory contains the main modules for contract inspection and retrie
 
 These modules work together to enable document indexing, semantic search, and retrieval using LLMs and Weaviate.
 
-# Search Functionality (`search.py`)
+## Search Functionality (`search.py`)
 
-This module provides search functionalities for collections in a local Weaviate instance. It supports three search types:
+
+This module provides search functionalities for collections in a local Weaviate instance. It supports three search types and metadata filtering:
+
 
 - **BM25 Search**: Uses the BM25 algorithm for keyword-based search.
 	- Usage: Set `type="bm25"`
@@ -30,6 +32,28 @@ This module provides search functionalities for collections in a local Weaviate 
 - **Hybrid Search**: Combines keyword and vector search for improved relevance.
 	- Usage: Set `type="hybrid"`
 	- Returns results using both BM25 and vector similarity.
+
+### Metadata Filtering
+
+All search types support metadata-based filtering. Filters are constructed using the `add_metadata_filters` function, which reads filter configuration (such as date ranges) from `metadata.yml` and applies them to the search query. This allows you to restrict search results based on document metadata (e.g., `effective_date`).
+
+#### Example: Filtering by Effective Date
+
+```python
+from src.retriver.weaviate_search.search import weaviate_search, add_metadata_filters
+import yaml
+from src.retriver.config import METADATA_CONFIG_PATH
+
+metadata_config = yaml.safe_load(open(METADATA_CONFIG_PATH))
+results = weaviate_search(
+	query="oracle",
+	type="hybrid",
+	collection="Page",
+	limit=5,
+	filters=add_metadata_filters(metadata_config["metadata_filter_config"])
+)
+print("Search Results:", results)
+```
 
 #### Main Function: `weaviate_search(query, type, collection, limit)`
 
@@ -52,5 +76,5 @@ print("Search Results:", results)
 
 ## TODO
 
-- Implement metadata filtering for each search type.
+Metadata filtering is implemented for all search types. You can customize filter logic in `add_metadata_filters` in `search.py`.
 
