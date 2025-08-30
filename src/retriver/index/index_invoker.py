@@ -3,11 +3,11 @@ sys.path.append("/home/kosala/git-repos/contract_inspect/")
 import weaviate
 from pathlib import Path
 from retriver.index.util.index_lib import (
-    ContentExtractor, 
     create_schema, 
     partition_pdf, 
     store_data_in_weaviate
 )
+from src.retriver.index.util.content_extractor import ContentExtractor
 from src.retriver.config import WEAVIATE_SCHEMA
 from src.retriver.config import DATA_FOLDER, METADATA_CONFIG_PATH
 import yaml
