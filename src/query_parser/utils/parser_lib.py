@@ -12,7 +12,7 @@ def extract_entities(prompt: str) -> list[str]:
         },
         {
             "role": "user", 
-            "content": "What is the capital of sri lanka?"
+            "content": prompt
         }
     ])
 
