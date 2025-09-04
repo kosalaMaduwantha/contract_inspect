@@ -1,5 +1,5 @@
 
-# Implementation Overview
+# Implementation Overview 
 
 
 ## Project Structure Overview
@@ -22,7 +22,26 @@ The `src` directory contains the main modules for contract inspection and retrie
 
 - **query_parser/**  
 	Implements query parsing for the RAG system.
-	- `utils/parser_lib.py`: Utility functions for query parsing (placeholder for now).
+	- `utils/parser_lib.py`: Utility functions for query parsing.
+		- `extract_entities(prompt: str) -> list[str]`:
+			- Purpose: Parse a user query and extract named entities (terms, parties, dates, clause names, etc.) that can be used to build retrieval filters and improve document relevance for RAG.
+			- Implementation: Calls the Ollama chat API (model `llama3.2`) with a system prompt taken from `src.retriver.config.OLLAMA_SYSTEM_MESSAGES['entity_resolution']` and the user `prompt`. The current implementation returns the model's message content; callers should validate/parse that content into a list of entity strings if needed.
+			- Inputs: `prompt` — the user query string.
+			- Outputs: Annotated as `list[str]` (expected list of entity strings). Note: the function presently returns the raw LLM response (`response['message']['content']`) so the actual runtime type may be `str` unless the system prompt instructs the model to return a JSON array.
+			- Dependencies: `ollama` Python client and a configured `OLLAMA_SYSTEM_MESSAGES` dictionary containing an `entity_resolution` entry.
+			- Example usage:
+
+			```python
+			from src.query_parser.utils.parser_lib import extract_entities
+			entities = extract_entities("Find obligations for Oracle and the vendor related to data retention")
+			# entities is expected to be a list of strings (or raw model content that should be parsed)
+			```
+
+			- Error modes / edge cases:
+				- network or LLM errors when calling Ollama; callers should handle exceptions from the `ollama.chat` call.
+				- empty or ambiguous prompts may return an empty list or unexpected text.
+				- model responses may be free-form text; to guarantee machine-parseable output, update the system prompt to require a JSON array (recommended).
+			- Next steps (recommended): enforce structured output (JSON array) from the system prompt or parse the returned content in `extract_entities` before returning to callers so the function reliably returns `list[str]`.
 	- `tests/`: Unit tests for query parser components.
 
 These modules work together to enable document indexing, semantic search, query parsing, and retrieval using LLMs and Weaviate.
@@ -92,3 +111,4 @@ Create Query parser module to the RAG system to parse the prompt and extract rel
 
 Implement ReRanking for the Retriever module.
 
+Python version 3.12
