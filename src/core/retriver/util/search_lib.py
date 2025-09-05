@@ -5,7 +5,7 @@ from weaviate.classes.query import MetadataQuery, Filter
 from src.core.config import METADATA_CONFIG_PATH
 import yaml
 
-def weaviate_search(query: str, type: str, collection: str, limit: int, filters: tuple=None) -> any:
+def weaviate_search(query: str, type: str, collection: str, limit: int, filters: tuple=None) -> list[str]:
     response = None
     try:
         client = weaviate.connect_to_local()
@@ -37,7 +37,9 @@ def weaviate_search(query: str, type: str, collection: str, limit: int, filters:
     except Exception as e:
         print("Error occurred while searching:", e)
         client.close()
-    return response
+        
+    return [element.__dict__['properties']['content'] \
+        for element in response.objects]
 
 def add_metadata_filters(filter_config: dict) -> tuple:
     # create set of metadata filters using a configuration

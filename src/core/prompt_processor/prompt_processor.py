@@ -7,9 +7,12 @@ function raises a clear error if the adapter was not initialized.
 """
 
 from typing import Any, Optional
+import logging
 # Module-level variable. Use get_llm_adapter() to access safely.
 llm_sp_adapter: Optional[Any] = None
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 def init(llm_adapter: Any) -> None:
     """Initialize the module-level LLM adapter.
@@ -21,34 +24,29 @@ def init(llm_adapter: Any) -> None:
     global llm_sp_adapter
     llm_sp_adapter = llm_adapter
 
-
 def get_llm_adapter() -> Any:
     """Return the initialized LLM adapter or raise RuntimeError if missing."""
     if llm_sp_adapter is None:
         raise RuntimeError("LLM adapter not initialized. Call init(adapter) first.")
     return llm_sp_adapter
 
-
 def clear_llm_adapter() -> None:
     """Clear the module-level adapter (useful for tests)."""
     global llm_sp_adapter
     llm_sp_adapter = None
     
-def extract_entities(prompt: str, system_message: str) -> str:
-    """Extract entities from the given prompt using the LLM adapter.
-
-    Args:
-        prompt: The user-facing prompt or instruction to send to the LLM.
-        system_message: The system message to include in the request.
-
-    Returns:
-        The text response produced by the LLM.
-    """
+def _invoke_llm_and_get_content(prompt: str, system_message: str) -> str:
+    """Helper to invoke LLM and return the content from the response."""
     llm_adapter = get_llm_adapter()
-    entities = llm_adapter.invoke_llm(prompt=prompt, system_message=system_message)
-    return entities['message']['content']
+    response = llm_adapter.invoke_llm(prompt=prompt, system_message=system_message)
+    return response['message']['content']
 
-def create_query_context(passages: list, query: str, max_tokens: int = 2048) -> str:
+def extract_entities(prompt: str, system_message: str) -> str:
+    """Extract entities from the given prompt using the LLM adapter."""
+    logger.info("extract_entities called with prompt: %s", prompt)
+    return _invoke_llm_and_get_content(prompt, system_message)
+
+def create_query_context(passages: list, query: str) -> str:
     """Construct a context string from passages and a user query.
 
     Args:
@@ -63,3 +61,17 @@ def create_query_context(passages: list, query: str, max_tokens: int = 2048) -> 
     prompt = f"{context}\n\n---\nUser Query: {query}"
     # Optionally truncate prompt to max_tokens if needed
     return prompt
+
+def generate_answer(prompt: str, system_message: str) -> str:
+    """Generate an answer from the given prompt using the LLM adapter.
+
+    Args:
+        prompt: The user-facing prompt or instruction to send to the LLM.
+        system_message: The system message to include in the request.
+
+    Returns:
+        The text response produced by the LLM.
+    """
+    """Generate an answer from the given prompt using the LLM adapter."""
+    logger.info("generate_answer called with prompt: %s", prompt)
+    return _invoke_llm_and_get_content(prompt, system_message)

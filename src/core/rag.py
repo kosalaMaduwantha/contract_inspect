@@ -17,7 +17,7 @@ def invoke_rag(query: str, query_type: str, collection: str, limit: int) -> any:
         prompt=query,
         system_message=OLLAMA_SYSTEM_MESSAGES['entity_resolution']
     )
-    extracted_entities = " ".join(extracted_entities)
+    extracted_entities = "".join(extracted_entities)
     
     # call weaviate to search for relevant documents
     results = weaviate_search(
@@ -29,14 +29,26 @@ def invoke_rag(query: str, query_type: str, collection: str, limit: int) -> any:
             metadata_config["metadata_filter_config"]
         )
     )
+    
+    # construct the prompt for final answer generation
+    augmented_prompt = prompt_processor.create_query_context(
+        passages=results,
+        query=query,
+    )
+    
+    # answer generation using llm
+    results = prompt_processor.generate_answer(
+        prompt=augmented_prompt,
+        system_message=OLLAMA_SYSTEM_MESSAGES['answer_generation']
+    )
     return results
     
 
 if __name__ == "__main__":
-    query = "what is oracle"
+    query = "what is oracle open source agreement?"
     type = "hybrid"  # or "vector" or "hybrid"
     collection = "Page"
-    limit = 5
+    limit = 2
     metadata_config = yaml.safe_load(open(METADATA_CONFIG_PATH))
     
     results = invoke_rag(query, type, collection, limit)
