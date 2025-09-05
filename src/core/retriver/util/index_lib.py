@@ -7,6 +7,10 @@ from pathlib import Path
 from weaviate.embedded import EmbeddedOptions
 from unstructured.partition.pdf import partition_pdf
 from src.core.config import WEAVIATE_SCHEMA
+from typing import Any, Optional
+
+# Module-level variable. Use get_vector_db_adapter() to access safely.
+vector_db_adapter: Optional[Any] = None
 
 # logger config
 logger = logging.getLogger(__name__)
@@ -91,18 +95,39 @@ def partition_pdf_file(file_path: str) -> any:
     """
     elements = partition_pdf(filename=file_path)
     return elements
-    
-def create_schema(client, schema: dict) -> None:
-    """Create a Weaviate schema for the Document class.
+
+def init(adapter: Any) -> None:
+    """Initialize the module-level vector DB adapter.
+
+    Args:
+        adapter: An object that implements the expected vector DB interface
+                 (must provide the necessary methods for interaction).
     """
-    client.collections.delete_all()
-    client.collections.create_from_dict(schema)
+    global vector_db_adapter
+    vector_db_adapter = adapter
+
+def _get_vector_db_adapter() -> Any:
+    """Return the initialized vector DB adapter or raise RuntimeError if missing."""
+    if vector_db_adapter is None:
+        raise RuntimeError("Vector DB adapter not initialized. Call init(adapter) first.")
+    return vector_db_adapter
+
+def clear_vector_db_adapter() -> None:
+    """Clear the module-level adapter (useful for tests)."""
+    global vector_db_adapter
+    vector_db_adapter = None
+    
+def create_schema(schema: dict) -> None:
+    """Create a Vector DB schema for the Document class.
+    """
+    vector_db_adapter = _get_vector_db_adapter()
+    vector_db_adapter.drop_all_collections()
+    vector_db_adapter.create_schema(schema)
     return None
 
-def store_data_in_weaviate(client, data_objects: list[dict], collection: str) -> None:
-    """Store the processed data objects in Weaviate.
+def store_data_in_vector_db(data_objects: list[dict], collection: str) -> None:
+    """Store the processed data objects in Vector DB.
     """
-    pages = client.collections.get(collection)
-    with pages.batch.fixed_size(batch_size=100) as batch:
-        for data_object in data_objects:
-            batch.add_object(data_object)
+    vector_db_adapter = _get_vector_db_adapter()
+    vector_db_adapter.insert_objects(collection, data_objects)
+    return None

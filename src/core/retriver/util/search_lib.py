@@ -1,47 +1,101 @@
 import sys
+from typing import Any, Optional
+
 sys.path.append("/home/kosala/git-repos/contract_inspect/")
-import weaviate
-from weaviate.classes.query import MetadataQuery, Filter
+
+from weaviate.classes.query import Filter
 from src.core.config import METADATA_CONFIG_PATH
+from src.core.spi.vector_db_spi import (
+    VectorDBSPI,
+    SearchResult,
+    VectorDBError,
+    FilterSpec,
+)
+from src.sp_adapters.weaviate_adapter import WeaviateVectorDBAdapter
 import yaml
 
-def weaviate_search(query: str, type: str, collection: str, limit: int, filters: tuple=None) -> list[str]:
-    response = None
+"""Module to perform searches via a pluggable Vector DB adapter.
+
+Mirrors the adapter wiring in index_lib.py and avoids direct client usage.
+"""
+
+# Module-level variable. Use _get_vector_db_adapter() to access safely.
+vector_db_adapter: Optional[VectorDBSPI] = None
+
+
+def init(adapter: Any) -> None:
+    """Initialize the module-level vector DB adapter.
+
+    Args:
+        adapter: An object that implements the expected vector DB interface
+                 (must provide the necessary methods for interaction).
+    """
+    global vector_db_adapter
+    vector_db_adapter = adapter
+
+def _get_vector_db_adapter() -> Any:
+    """Return the initialized vector DB adapter or raise RuntimeError if missing."""
+    if vector_db_adapter is None:
+        raise RuntimeError("Vector DB adapter not initialized. Call init(adapter) first.")
+    return vector_db_adapter
+
+def clear_vector_db_adapter() -> None:
+    """Clear the module-level adapter (useful for tests)."""
+    global vector_db_adapter
+    vector_db_adapter = None
+
+def weaviate_search(
+    query: str,
+    type: str,
+    collection: str,
+    limit: int,
+    filters: FilterSpec | None = None,
+) -> list[str]:
+    """Search via the configured Vector DB adapter and return content strings.
+
+    The adapter must be initialized (and typically connected) via init(adapter).
+    Returns the `content` property from each hit if present.
+    """
+    adapter = _get_vector_db_adapter()
     try:
-        client = weaviate.connect_to_local()
+        results: list[SearchResult]
         if type == "bm25":
-            pages = client.collections.get(collection)
-            response = pages.query.bm25(
-                query=query,
-                limit=limit,
+            results = adapter.search_bm25(
+                collection, 
+                query, 
+                limit=limit, 
                 filters=filters
             )
-        elif type == "vector": # TODO: fix bug in vector search
-            pages = client.collections.get(collection)
-            response = pages.query.near_text(
-                query=query,
-                limit=limit,
-                return_metadata=MetadataQuery(distance=True),
-                filters=filters
+        elif type == "vector":
+            results = adapter.search_vector(
+                collection, 
+                query, 
+                limit=limit, 
+                filters=filters, 
+                return_distance=True
             )
         elif type == "hybrid":
-            pages = client.collections.get(collection)
-            response = pages.query.hybrid(
-                query=query,
-                limit=limit,
-                filters=filters,
+            results = adapter.search_hybrid(
+                collection, 
+                query, 
+                limit=limit, 
+                filters=filters
             )
         else:
-            print("search type is not supported")
-        client.close()
-    except Exception as e:
+            raise ValueError("search type is not supported")
+    except (VectorDBError, Exception) as e:
         print("Error occurred while searching:", e)
-        client.close()
-        
-    return [element.__dict__['properties']['content'] \
-        for element in response.objects]
+        return []
 
-def add_metadata_filters(filter_config: dict) -> tuple:
+    # Extract the `content` field if present.
+    out: list[str] = []
+    for r in results:
+        props = r.properties or {}
+        if "content" in props and isinstance(props["content"], str):
+            out.append(props["content"])
+    return out
+
+def add_metadata_filters(filter_config: dict) -> FilterSpec:
     # create set of metadata filters using a configuration
     filters = (
         Filter.by_property(
@@ -57,10 +111,17 @@ if __name__ == "__main__":
     limit = 5
 
     metadata_config = yaml.safe_load(open(METADATA_CONFIG_PATH))
-    results = weaviate_search(
-        query, type, collection, limit, 
-        filters=add_metadata_filters(
-            metadata_config["metadata_filter_config"]
+    adapter = WeaviateVectorDBAdapter()
+    init(adapter)
+    adapter.connect()
+    try:
+        results = weaviate_search(
+            query,
+            type,
+            collection,
+            limit,
+            filters=add_metadata_filters(metadata_config["metadata_filter_config"]),
         )
-    )
+    finally:
+        adapter.close()
     print("Search Results:", results)

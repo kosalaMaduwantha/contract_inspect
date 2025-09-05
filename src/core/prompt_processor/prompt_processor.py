@@ -35,7 +35,7 @@ def clear_llm_adapter() -> None:
     global llm_sp_adapter
     llm_sp_adapter = None
     
-def _invoke_llm_and_get_content(prompt: str, system_message: str) -> str:
+def _invoke_llm_and_get_content(prompt: str, system_message: str=None) -> str:
     """Helper to invoke LLM and return the content from the response."""
     llm_adapter = get_llm_adapter()
     response = llm_adapter.invoke_llm(prompt=prompt, system_message=system_message)
@@ -43,26 +43,32 @@ def _invoke_llm_and_get_content(prompt: str, system_message: str) -> str:
 
 def extract_entities(prompt: str, system_message: str) -> str:
     """Extract entities from the given prompt using the LLM adapter."""
-    logger.info("extract_entities called with prompt: %s", prompt)
+    logger.debug("extract_entities called with prompt: %s", prompt)
     return _invoke_llm_and_get_content(prompt, system_message)
 
-def create_query_context(passages: list, query: str) -> str:
-    """Construct a context string from passages and a user query.
+def create_query_context(passages: list[str], query: str, instructions: str) -> str:
+    """
+    Construct a prompt for RAG using plain text passages and clear instructions.
 
     Args:
-        passages: A list of text passages to include in the context.
+        passages: A list of passage strings.
         query: The user query to append to the context.
-        max_tokens: Optional maximum token limit for the combined context.
+        instructions: Instructional text to prepend to the prompt.
 
     Returns:
-        A single string combining the passages and the user query.
+        A formatted string combining the passages and the user query, suitable for LLM input.
     """
-    context = "\n---\n".join(passages)
-    prompt = f"{context}\n\n---\nUser Query: {query}"
-    # Optionally truncate prompt to max_tokens if needed
+    context_lines = ["Passages:"]
+    if not passages:
+        context_lines.append("(no passages found)")
+    else:
+        for i, text in enumerate(passages, 1):
+            context_lines.append(f"{i}. {text.strip()}")
+    context = "\n".join(context_lines)
+    prompt = f"{instructions}\n{context}\n\nUser Query:\n{query}"
     return prompt
 
-def generate_answer(prompt: str, system_message: str) -> str:
+def generate_answer(prompt: str) -> str:
     """Generate an answer from the given prompt using the LLM adapter.
 
     Args:
@@ -73,5 +79,5 @@ def generate_answer(prompt: str, system_message: str) -> str:
         The text response produced by the LLM.
     """
     """Generate an answer from the given prompt using the LLM adapter."""
-    logger.info("generate_answer called with prompt: %s", prompt)
-    return _invoke_llm_and_get_content(prompt, system_message)
+    logger.debug("generate_answer called with prompt: %s", prompt)
+    return _invoke_llm_and_get_content(prompt)
