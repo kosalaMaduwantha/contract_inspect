@@ -4,49 +4,57 @@
 
 ## Project Structure Overview
 
-The `src` directory contains the main modules for contract inspection and retrieval:
+The project is structured as follows:
 
-- **llm/**  
-	Components for large language models (LLMs), such as model loading and inference.
+- **src/**: Main source code directory.
+  - **core/**: Core modules for the RAG system.
+    - `config.py`: Configuration settings, including Weaviate schema, Ollama system messages, and paths.
+    - `rag.py`: Main RAG pipeline implementation, integrating entity extraction, retrieval, and answer generation.
+    - **prompt_processor/**: Handles prompt processing for the RAG system.
+      - `prompt_processor.py`: Functions for entity extraction, context construction, and answer generation using LLMs.
+    - **retriever/**: Retrieval logic and Weaviate-based indexing/search.
+      - `index_invoker.py`: Invokes document indexing in Weaviate.
+      - **util/**: Utility functions.
+        - `search_lib.py`: BM25, vector, and hybrid search logic using Weaviate.
+    - **spi/**: Service Provider Interface for LLMs.
+      - `llm_spi.py`: Interface definitions for LLM adapters.
+  - **llm/**: Components for large language models (LLMs), such as model loading and inference.
+  - **sp_adapters/**: Service provider adapters.
+    - `ollama_llm_sp_adapter.py`: Adapter for Ollama LLM integration.
 
-- **retriver/**  
-	Implements retrieval logic and Weaviate-based indexing/search.
-	- `config.py`: Configuration settings for retrieval operations.
-	- `retriever.py`: Core retrieval logic for searching and fetching data.
-	- **index/**: Indexing utilities.
-		- `index_invoker.py`: Invokes document indexing in Weaviate.
-		- `util/index_lib.py`: Library functions for PDF partitioning and schema management.
-		- `util/content_extractor.py`: Extracts content from partitioned documents.
-	- **search/**: Search utilities.
-		- `util/search_lib.py`: BM25, vector, and hybrid search logic using Weaviate.
+- **appendix/**: Additional utilities.
+  - `add_data.py`: Script to add data to the database.
+  - `create_collection.py`: Script to create Weaviate collections.
+  - `db_connection.py`: Database connection utilities.
+  - `query_collection.py`: Script to query collections.
 
-- **query_parser/**  
-	Implements query parsing for the RAG system.
-	- `utils/parser_lib.py`: Utility functions for query parsing.
-		- `extract_entities(prompt: str) -> list[str]`:
-			- Purpose: Parse a user query and extract named entities (terms, parties, dates, clause names, etc.) that can be used to build retrieval filters and improve document relevance for RAG.
-			- Implementation: Calls the Ollama chat API (model `llama3.2`) with a system prompt taken from `src.retriver.config.OLLAMA_SYSTEM_MESSAGES['entity_resolution']` and the user `prompt`. The current implementation returns the model's message content; callers should validate/parse that content into a list of entity strings if needed.
-			- Inputs: `prompt` — the user query string.
-			- Outputs: Annotated as `list[str]` (expected list of entity strings). Note: the function presently returns the raw LLM response (`response['message']['content']`) so the actual runtime type may be `str` unless the system prompt instructs the model to return a JSON array.
-			- Dependencies: `ollama` Python client and a configured `OLLAMA_SYSTEM_MESSAGES` dictionary containing an `entity_resolution` entry.
-			- Example usage:
+- **exact_match/**: Exact match search implementations.
+  - `bm25_indexer.py`: BM25 indexing.
+  - `bm25_scoring_search.py`: BM25 scoring and search.
 
-			```python
-			from src.query_parser.utils.parser_lib import extract_entities
-			entities = extract_entities("Find obligations for Oracle and the vendor related to data retention")
-			# entities is expected to be a list of strings (or raw model content that should be parsed)
-			```
+- **pdf-processing/**: PDF processing utilities.
+  - `partition_pdf.py`: PDF partitioning logic.
 
-			- Error modes / edge cases:
-				- network or LLM errors when calling Ollama; callers should handle exceptions from the `ollama.chat` call.
-				- empty or ambiguous prompts may return an empty list or unexpected text.
-				- model responses may be free-form text; to guarantee machine-parseable output, update the system prompt to require a JSON array (recommended).
-			- Next steps (recommended): enforce structured output (JSON array) from the system prompt or parse the returned content in `extract_entities` before returning to callers so the function reliably returns `list[str]`.
-	- `tests/`: Unit tests for query parser components.
+- **semantic_search/**: Semantic search implementations.
+
+- **spacy_named_entity_recognition/**: Named entity recognition using SpaCy.
+  - `test.py`: Test script for NER.
+
+- **compose-files/**: Docker Compose files.
+  - `compose-weaviate.yml`: Weaviate setup.
+
+- **data/**: Data files.
+  - `Oracle_Cloud_Agreement.pdf`: Sample contract document.
+
+- **env/**: Python virtual environment.
+
+- `metadata.yml`: Metadata configuration file.
+
+- `requirements.txt`: Python dependencies.
 
 These modules work together to enable document indexing, semantic search, query parsing, and retrieval using LLMs and Weaviate.
 
-## Search Functionality (`search.py`)
+## Search Functionality (`search_lib.py`)
 
 
 This module provides search functionalities for collections in a local Weaviate instance. It supports three search types and metadata filtering:
@@ -71,9 +79,9 @@ All search types support metadata-based filtering. Filters are constructed using
 #### Example: Filtering by Effective Date
 
 ```python
-from src.retriver.weaviate_search.search import weaviate_search, add_metadata_filters
+from src.core.retriever.util.search_lib import weaviate_search, add_metadata_filters
 import yaml
-from src.retriver.config import METADATA_CONFIG_PATH
+from src.core.config import METADATA_CONFIG_PATH
 
 metadata_config = yaml.safe_load(open(METADATA_CONFIG_PATH))
 results = weaviate_search(
@@ -86,29 +94,61 @@ results = weaviate_search(
 print("Search Results:", results)
 ```
 
-#### Main Function: `weaviate_search(query, type, collection, limit)`
+#### Main Function: `weaviate_search(query, type, collection, limit, filters=None) -> list[str]`
 
 - **Parameters**:
 	- `query`: The search string.
 	- `type`: Search type (`bm25`, `vector`, or `hybrid`).
 	- `collection`: The name of the collection to search (e.g., `"Page"`).
 	- `limit`: Maximum number of results to return.
+	- `filters`: Optional tuple of filters to apply.
 
-- **Returns**: Search results from the specified collection.
+- **Returns**: A list of strings containing the content of the retrieved documents.
 
 - **Error Handling**: Prints an error message if the search fails (e.g., missing vectorizer for vector search).
 
-#### Example Usage
+## RAG Pipeline
+
+The RAG (Retrieval-Augmented Generation) system is implemented in `src/core/rag.py`. It integrates the following components:
+
+1. **Entity Extraction**: Uses `prompt_processor.extract_entities` to extract relevant entities from the user query.
+2. **Retrieval**: Calls `weaviate_search` with the extracted entities to retrieve relevant document passages.
+3. **Context Construction**: Uses `prompt_processor.create_query_context` to build a context from the retrieved passages and the original query.
+4. **Answer Generation**: Uses `prompt_processor.generate_answer` to generate a final answer based on the constructed context.
+
+### Example Usage
 
 ```python
-results = weaviate_search("oracle", "hybrid", "Page", 5)
-print("Search Results:", results)
+from src.core.rag import invoke_rag
+
+result = invoke_rag(
+    query="What is the Oracle open source agreement?",
+    query_type="hybrid",
+    collection="Page",
+    limit=2
+)
+print("Answer:", result)
 ```
+
+This pipeline provides end-to-end question answering over contract documents.
 
 ## TODO
 
-Create Query parser module to the RAG system to parse the prompt and extract relevant information for retrieval and for the answer generation.
-
-Implement ReRanking for the Retriever module.
+- [x] Create Query parser module (implemented as prompt_processor)
+- [ ] Implement ReRanking for the Retriever module.
 
 Python version 3.12
+
+The following features are implemented in the RAG pipeline:
+
+- Query Processing: Entity extraction from user queries.
+- Document Ranking: Retrieval using BM25, vector, or hybrid search.
+- Context Construction: Aggregation of retrieved passages into context.
+- Generation Module: Answer generation using LLM.
+- Post-processing: Basic output formatting.
+- Evaluation & Monitoring: Basic logging in place.
+
+Future enhancements:
+
+- Feedback Loop: Collect user feedback to improve quality.
+- Advanced ReRanking: Implement more sophisticated ranking algorithms.
