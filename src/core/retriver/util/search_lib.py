@@ -2,7 +2,7 @@ import sys
 sys.path.append("/home/kosala/git-repos/contract_inspect/")
 import weaviate
 from weaviate.classes.query import MetadataQuery, Filter
-from src.retriver.config import METADATA_CONFIG_PATH
+from src.core.config import METADATA_CONFIG_PATH
 import yaml
 
 def weaviate_search(query: str, type: str, collection: str, limit: int, filters: tuple=None) -> any:
