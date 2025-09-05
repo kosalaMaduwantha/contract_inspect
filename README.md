@@ -400,13 +400,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Ollama](https://ollama.ai/) for local LLM capabilities
 - [Unstructured](https://unstructured.io/) for document processing
 
-## 📞 Support
-
-For questions and support:
-- Open an issue on GitHub
-- Check the [Troubleshooting](#troubleshooting) section
-- Review the [documentation](docs/)
-
 ---
 
 **Python Version:** 3.12+

@@ -48,22 +48,6 @@ sudo apt install docker-compose-plugin -y
 # Log out and back in for Docker group changes to take effect
 ```
 
-### macOS
-
-```bash
-# Install Homebrew (if not already installed)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install Python 3.12
-brew install python@3.12
-
-# Install Docker Desktop
-brew install --cask docker
-
-# Start Docker Desktop from Applications
-open -a Docker
-```
-
 ### Windows (WSL2)
 
 1. **Enable WSL2**:
@@ -217,38 +201,6 @@ curl http://localhost:8080/v1/meta  # Should return JSON metadata
 
 # Check Docker containers
 docker ps  # Should show weaviate container running
-```
-
-### Test 2: Run a Sample Query
-
-```bash
-# Navigate to core directory
-cd src/core
-
-# Run a test query
-python rag.py
-
-# Should output an answer about Oracle agreement
-```
-
-### Test 3: Direct Search Test
-
-```bash
-# Test search functionality
-python -c "
-from retriver.util.search_lib import weaviate_search
-from sp_adapters.weaviate_adapter import WeaviateVectorDBAdapter
-import retriver.util.search_lib as search_lib
-
-adapter = WeaviateVectorDBAdapter()
-adapter.connect()
-search_lib.init(adapter)
-
-results = search_lib.weaviate_search('oracle', 'hybrid', 'Page', 2)
-print('Search results:', len(results))
-adapter.close()
-"
-```
 
 ## Configuration
 
@@ -286,128 +238,6 @@ To use an external Weaviate instance:
 ```bash
 # Edit src/sp_adapters/weaviate_adapter.py
 # Update the connect() method to use your Weaviate URL
-```
-
-## Troubleshooting
-
-### Common Issues
-
-#### 1. Python Version Issues
-
-```bash
-# If python3.12 not found
-which python3.12  # Check if installed
-python3 --version  # Check default version
-
-# Use python3 if 3.12 is default
-python3 -m venv env
-```
-
-#### 2. Permission Denied (Docker)
-
-```bash
-# Add user to docker group
-sudo usermod -aG docker $USER
-# Log out and back in
-
-# Or use sudo temporarily
-sudo docker compose -f compose-files/compose-weaviate.yml up -d
-```
-
-#### 3. Port Already in Use
-
-```bash
-# Check what's using port 8080
-sudo lsof -i :8080
-
-# Stop conflicting services or change Weaviate port
-# Edit compose-files/compose-weaviate.yml to use different port
-```
-
-#### 4. Ollama Connection Failed
-
-```bash
-# Check if Ollama is running
-ps aux | grep ollama
-
-# Start Ollama if not running
-ollama serve &
-
-# Check if models are available
-ollama list
-
-# Test Ollama directly
-curl http://localhost:11434/api/version
-```
-
-#### 5. Weaviate Connection Timeout
-
-```bash
-# Check Weaviate logs
-docker logs weaviate
-
-# Restart Weaviate
-docker compose -f compose-files/compose-weaviate.yml restart
-
-# Check if Weaviate is healthy
-curl http://localhost:8080/v1/.well-known/ready
-```
-
-#### 6. Import Errors
-
-```bash
-# Add project to Python path
-export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-
-# Or install in development mode
-pip install -e .
-```
-
-### Performance Optimization
-
-#### For Large Document Sets
-
-1. **Increase Weaviate Memory**:
-   ```yaml
-   # In compose-files/compose-weaviate.yml, add:
-   environment:
-     LIMIT_RESOURCES: 'false'
-   deploy:
-     resources:
-       limits:
-         memory: 8G
-   ```
-
-2. **Use SSD Storage**:
-   ```yaml
-   # Mount to SSD location
-   volumes:
-     - /path/to/ssd/weaviate_data:/var/lib/weaviate
-   ```
-
-3. **Tune Batch Sizes**:
-   ```python
-   # In index_invoker.py, adjust batch_size
-   index_lib.store_data_in_vector_db(
-       content_extractor.get_processed_content(),
-       WEAVIATE_SCHEMA["class"],
-       batch_size=50  # Reduce for limited memory
-   )
-   ```
-
-### Getting Help
-
-If you encounter issues not covered here:
-
-1. Check the main [Troubleshooting](TROUBLESHOOTING.md) guide
-2. Search existing GitHub issues
-3. Create a new issue with:
-   - Your OS and Python version
-   - Complete error messages
-   - Steps to reproduce
-   - Output of verification commands
-
-## Next Steps
 
 After successful installation:
 
